@@ -4,12 +4,14 @@ use axum::{
     Router, middleware as axum_middleware,
     routing::{get, post},
 };
+use log::info;
 use middleware::jwt_auth;
 use tonic::transport::Server;
-use log::info;
 
+use crate::chungusdb_grpc_service::{
+    ChungusDbServiceImpl, chungusdb::chungus_db_service_server::ChungusDbServiceServer,
+};
 use crate::handlers::*;
-use crate::chungusdb_grpc_service::{chungusdb::chungus_db_service_server::ChungusDbServiceServer, ChungusDbServiceImpl};
 
 mod chungusdb_grpc_service;
 mod db;
@@ -38,7 +40,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let http_state = app_state.clone();
     let http_server = tokio::spawn(async move {
         let protected_routes = Router::new()
-            .route("/players/batch", post(post_batch_player_data))
+            // .route("/players/batch", post(post_batch_player_data))
             .layer(axum_middleware::from_fn_with_state(
                 http_state.clone(),
                 jwt_auth,
@@ -46,8 +48,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
         let app = Router::new()
             .route("/", get(|| async { "Hello World!" }))
-            .route("/player", get(get_all_player_data))
-            .route("/player/{id}", get(get_player_data))
+            // .route("/player", get(get_all_player_data))
+            // .route("/player/{id}", get(get_player_data))
             .merge(protected_routes)
             .with_state(http_state);
 

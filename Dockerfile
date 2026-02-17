@@ -32,6 +32,4 @@ COPY --from=builder /app/migrations /app/migrations
 
 # Copy entrypoint script
 COPY entrypoint.sh /app/
-RUN chmod +x /app/entrypoint.sh
-
-CMD ["/app/entrypoint.sh"]
+CMD ["./player"]

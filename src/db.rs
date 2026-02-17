@@ -18,24 +18,24 @@ impl Db {
         Ok(Db { pool })
     }
 
-    pub async fn get_player_by_id(&self, id: i64) -> Result<Player, sqlx::Error> {
-        let player = sqlx::query_as!(Player, "SELECT * FROM players WHERE id = $1", id)
-            .fetch_one(&self.pool)
-            .await?;
-        Ok(player)
-    }
+    // pub async fn get_player_by_id(&self, id: i64) -> Result<Player, sqlx::Error> {
+    //     let player = sqlx::query_as!(Player, "SELECT * FROM players WHERE id = $1", id)
+    //         .fetch_one(&self.pool)
+    //         .await?;
+    //     Ok(player)
+    // }
 
-    pub async fn get_all_players(&self) -> Result<Vec<Player>, sqlx::Error> {
-        let players = sqlx::query_as!(Player, "SELECT * FROM players")
-            .fetch_all(&self.pool)
-            .await?;
+    // pub async fn get_all_players(&self) -> Result<Vec<Player>, sqlx::Error> {
+    //     let players = sqlx::query_as!(Player, "SELECT * FROM players")
+    //         .fetch_all(&self.pool)
+    //         .await?;
 
-        Ok(players)
-    }
+    //     Ok(players)
+    // }
 
     pub async fn process_match_stats(
         &self,
-        incoming_players: Vec<IncomingPlayer>
+        incoming_players: Vec<IncomingPlayer>,
     ) -> Result<(), sqlx::Error> {
         let mut transaction = self.pool.begin().await?;
 
@@ -49,7 +49,7 @@ impl Db {
     }
 
     async fn insert_match(
-       transaction: &mut sqlx::Transaction<'static, sqlx::Postgres>
+        transaction: &mut sqlx::Transaction<'static, sqlx::Postgres>,
     ) -> Result<Uuid, sqlx::Error> {
         let row = sqlx::query!(
             r#"
@@ -65,16 +65,13 @@ impl Db {
 
     async fn upsert_batch_players(
         transaction: &mut sqlx::Transaction<'static, sqlx::Postgres>,
-        incoming_players: &Vec<IncomingPlayer>
+        incoming_players: &Vec<IncomingPlayer>,
     ) -> Result<(), sqlx::Error> {
         let chungids: Vec<Uuid> = incoming_players
             .iter()
             .map(|player| player.chungid)
             .collect();
-        let frags: Vec<i32> = incoming_players
-            .iter()
-            .map(|player| player.frags)
-            .collect();
+        let frags: Vec<i32> = incoming_players.iter().map(|player| player.frags).collect();
         let deaths: Vec<i32> = incoming_players
             .iter()
             .map(|player| player.deaths)
@@ -83,10 +80,7 @@ impl Db {
             .iter()
             .map(|player| player.accuracy)
             .collect();
-        let elos: Vec<i32> = incoming_players
-            .iter()
-            .map(|player| player.elo)
-            .collect();
+        let elos: Vec<i32> = incoming_players.iter().map(|player| player.elo).collect();
 
         sqlx::query!(
             r#"
@@ -127,9 +121,8 @@ impl Db {
     async fn insert_batch_match_participants(
         transaction: &mut sqlx::Transaction<'static, sqlx::Postgres>,
         incoming_players: &Vec<IncomingPlayer>,
-        match_id: Uuid
+        match_id: Uuid,
     ) -> Result<(), sqlx::Error> {
-
         let chungids: Vec<Uuid> = incoming_players
             .iter()
             .map(|player| player.chungid)
@@ -138,10 +131,7 @@ impl Db {
             .iter()
             .map(|player| player.name.clone())
             .collect();
-        let frags: Vec<i32> = incoming_players
-            .iter()
-            .map(|player| player.frags)
-            .collect();
+        let frags: Vec<i32> = incoming_players.iter().map(|player| player.frags).collect();
         let deaths: Vec<i32> = incoming_players
             .iter()
             .map(|player| player.deaths)
@@ -150,10 +140,7 @@ impl Db {
             .iter()
             .map(|player| player.accuracy)
             .collect();
-        let elos: Vec<i32> = incoming_players
-            .iter()
-            .map(|player| player.elo)
-            .collect();
+        let elos: Vec<i32> = incoming_players.iter().map(|player| player.elo).collect();
 
         sqlx::query!(
             r#"
@@ -185,7 +172,7 @@ impl Db {
         )
         .execute(&mut **transaction)
         .await?;
-        
+
         Ok(())
     }
 }

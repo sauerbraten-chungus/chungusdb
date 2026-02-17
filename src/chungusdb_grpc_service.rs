@@ -45,7 +45,7 @@ impl ChungusDbService for ChungusDbServiceImpl {
                     name: stats.name,
                     frags: stats.frags,
                     deaths: stats.deaths,
-                    accuracy: stats.accuracy,
+                    accuracy: stats.accuracy as f64,
                     elo: stats.elo,
                 }),
                 Err(e) => {
@@ -63,6 +63,14 @@ impl ChungusDbService for ChungusDbServiceImpl {
         //         error!("Failed to upsert match stats: {}", e);
         //         Status::internal(format!("Database error: {}", e))
         //     })?;
+
+        self.db
+            .process_match_stats(incoming_players)
+            .await
+            .map_err(|e| {
+                error!("Failed to process mathc stats {}", e);
+                Status::internal(format!("Database error: {}", e))
+            })?;
 
         info!("Successfully processed match stats");
 

@@ -31,5 +31,5 @@ CREATE INDEX idx_match_participants_chungid ON match_participants(chungid);
 CREATE INDEX idx_match_participants_match_id ON match_participants(match_id);
 
 -- Test
-INSERT INTO players (name, frags, deaths, accuracy, matches_played, elo, commendations)
-VALUES ('chungusgamer2012', 100, 50, 75.50, 3, 1250, 5);
+INSERT INTO players (chungid, name, frags, deaths, accuracy, matches_played, elo, commendations)
+VALUES ('019400aa-0000-7000-8000-000000000001', 'chungusgamer2012', 100, 50, 75.50, 3, 1250, 5);
