@@ -1,4 +1,4 @@
-FROM rust:1.88 as builder
+FROM rust:1.94 as builder
 WORKDIR /app
 
 # Install protoc (Protocol Buffer compiler)
@@ -19,7 +19,7 @@ COPY .sqlx ./.sqlx
 ENV SQLX_OFFLINE=true
 RUN cargo build --release
 
-FROM debian:bookworm-slim
+FROM debian:trixie-slim
 WORKDIR /app
 
 # Install postgresql-client for wait-for-db and sqlx needs
@@ -30,6 +30,7 @@ COPY --from=builder /app/target/release/player /app/
 COPY --from=builder /usr/local/cargo/bin/sqlx /usr/local/bin/
 COPY --from=builder /app/migrations /app/migrations
 
-# Copy entrypoint script
+# Entrypoint: wait for DB, run migrations, start the service
 COPY entrypoint.sh /app/
-CMD ["./player"]
+RUN chmod +x /app/entrypoint.sh
+ENTRYPOINT ["/app/entrypoint.sh"]

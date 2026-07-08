@@ -1,10 +1,8 @@
 #!/bin/bash
 set -e
 
-# Wait for database to be ready
 echo "Waiting for database..."
-until PGPASSWORD=xD psql -h db -U hehe -d player_db -c '\q' 2>/dev/null; do
-  echo "Database is unavailable - sleeping"
+until pg_isready -d "$DATABASE_URL" >/dev/null 2>&1; do
   sleep 1
 done
 

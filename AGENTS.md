@@ -1,4 +1,4 @@
-# CLAUDE.md — chungusdb
+# AGENTS.md — chungusdb
 
 ## Overview
 
@@ -62,7 +62,8 @@ JWT middleware exists but no routes currently use it.
 | `proto/chungusway_chungusdb.proto` | gRPC service definition |
 | `migrations/20251215000001_init.sql` | Schema + seed data |
 | `compose.yaml` | PostgreSQL for local dev |
-| `entrypoint.sh` | DB wait + migrate + start |
+| `entrypoint.sh` | Docker entrypoint: waits on `$DATABASE_URL` (pg_isready), runs migrations, execs `./player` |
+| `.env.example` | Environment template (copy to `.env`) |
 
 ## Development
 
@@ -71,12 +72,13 @@ cargo build
 cargo run                     # binds 0.0.0.0:3000 + 0.0.0.0:50052
 SQLX_OFFLINE=true cargo build # build without live DB (uses .sqlx/ metadata)
 sqlx migrate run              # run migrations
+cargo sqlx prepare            # regenerate .sqlx/ after changing queries or schema (needs live DB + DATABASE_URL)
 cargo fmt && cargo clippy
 ```
 
 ## Architecture Notes
 
 - **Upsert logic**: `process_match_stats` runs in a transaction — inserts match, upserts players (cumulative frags/deaths, weighted avg accuracy, increments matches_played), inserts match_participants
-- **SQLx offline mode**: `.sqlx/` directory contains pre-checked query metadata for Docker/CI builds
-- **Credential mismatch**: compose.yaml uses `user:pass`/`chungus_db`, entrypoint.sh uses `hehe:xD`/`player_db` — needs unifying
+- **SQLx offline mode**: `.sqlx/` contains pre-checked query metadata for Docker/CI builds. It must be regenerated (`cargo sqlx prepare` against a live, migrated DB) whenever queries or schema change — a stale cache breaks the Docker build.
+- **Docker**: image builds and runs standalone — `ENTRYPOINT` is `entrypoint.sh` (waits for the DB, runs migrations, starts the service). Builder stage is `rust:1.94` (sqlx-cli 0.9 requires rustc ≥1.94).
 - No tests, no graceful shutdown
