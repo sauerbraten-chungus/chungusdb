@@ -11,10 +11,10 @@ Player statistics service. Ingests match stats via gRPC and provides REST API fo
 
 ## gRPC API (port 50052)
 
-### `SendMatchStats` RPC
-- **Input**: `MatchStats { player_stats: map<string, Stats> }` (chungid → stats)
+### `RecordMatchStats` RPC
+- **Input**: `RecordMatchStatsRequest { player_stats: map<string, Stats> }` (chungid → stats)
 - **Stats**: `{ name, frags, deaths, accuracy, elo }`
-- **Response**: `MatchStatsResponse { message }`
+- **Response**: `RecordMatchStatsResponse { message }`
 - Called by chungusway after each match intermission
 
 ## HTTP API (port 3000)
@@ -78,7 +78,7 @@ cargo fmt && cargo clippy
 
 ## Architecture Notes
 
-- **Upsert logic**: `process_match_stats` runs in a transaction — inserts match, upserts players (cumulative frags/deaths, weighted avg accuracy, increments matches_played), inserts match_participants
+- **Upsert logic**: `process_match_stats` runs in a transaction — inserts match, upserts players (cumulative frags/deaths, weighted avg accuracy, increments matches_played, refreshes `name` to the last seen in-game name), inserts match_participants. Identity is `chungid` (UUID); `players.name` is a mutable display attribute (Steam persona-name model), while `match_participants.name` is a frozen per-match snapshot.
 - **SQLx offline mode**: `.sqlx/` contains pre-checked query metadata for Docker/CI builds. It must be regenerated (`cargo sqlx prepare` against a live, migrated DB) whenever queries or schema change — a stale cache breaks the Docker build.
 - **Docker**: image builds and runs standalone — `ENTRYPOINT` is `entrypoint.sh` (waits for the DB, runs migrations, starts the service). Builder stage is `rust:1.94` (sqlx-cli 0.9 requires rustc ≥1.94).
 - No tests, no graceful shutdown

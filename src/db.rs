@@ -71,6 +71,10 @@ impl Db {
             .iter()
             .map(|player| player.chungid)
             .collect();
+        let names: Vec<String> = incoming_players
+            .iter()
+            .map(|player| player.name.clone())
+            .collect();
         let frags: Vec<i32> = incoming_players.iter().map(|player| player.frags).collect();
         let deaths: Vec<i32> = incoming_players
             .iter()
@@ -84,9 +88,10 @@ impl Db {
 
         sqlx::query!(
             r#"
-            INSERT INTO players (chungid, frags, deaths, accuracy, matches_played, elo)
+            INSERT INTO players (chungid, name, frags, deaths, accuracy, matches_played, elo)
             SELECT
                 t.chungid,
+                t.name,
                 t.frags,
                 t.deaths,
                 t.accuracy,
@@ -94,19 +99,22 @@ impl Db {
                 t.elo
             FROM UNNEST (
                 $1::uuid[],
-                $2::int[],
+                $2::text[],
                 $3::int[],
-                $4::float8[],
-                $5::int[]
-            ) AS t(chungid, frags, deaths, accuracy, elo)
+                $4::int[],
+                $5::float8[],
+                $6::int[]
+            ) AS t(chungid, name, frags, deaths, accuracy, elo)
             ON CONFLICT (chungid) DO UPDATE
-            SET frags = players.frags + EXCLUDED.frags,
+            SET name = EXCLUDED.name,
+                frags = players.frags + EXCLUDED.frags,
                 deaths = players.deaths + EXCLUDED.deaths,
                 accuracy = (players.accuracy * players.matches_played + EXCLUDED.accuracy) / (players.matches_played + 1)::numeric,
                 matches_played = players.matches_played + 1,
                 elo = players.elo + EXCLUDED.elo
             "#,
             &chungids,
+            &names,
             &frags,
             &deaths,
             &accuracies,
