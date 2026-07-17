@@ -9,7 +9,7 @@ use middleware::jwt_auth;
 use tonic::transport::Server;
 
 use crate::chungusdb_grpc_service::{
-    ChungusDbServiceImpl, chungusdb::chungus_db_service_server::ChungusDbServiceServer,
+    ChungusDbImpl, chungusdb::chungus_db_server::ChungusDbServer,
 };
 use crate::handlers::*;
 
@@ -63,12 +63,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let grpc_state = app_state.clone();
     let grpc_server = tokio::spawn(async move {
         let addr = "0.0.0.0:50052".parse().unwrap();
-        let service = ChungusDbServiceImpl::new(grpc_state.db);
+        let service = ChungusDbImpl::new(grpc_state.db);
 
         info!("gRPC server listening on 0.0.0.0:50052");
 
         Server::builder()
-            .add_service(ChungusDbServiceServer::new(service))
+            .add_service(ChungusDbServer::new(service))
             .serve(addr)
             .await
             .unwrap();

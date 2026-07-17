@@ -10,25 +10,25 @@ pub mod chungusdb {
     tonic::include_proto!("chungusdb");
 }
 
-use chungusdb::chungus_db_service_server::ChungusDbService;
-use chungusdb::{MatchStats, MatchStatsResponse};
+use chungusdb::chungus_db_server::ChungusDb;
+use chungusdb::{RecordMatchStatsRequest, RecordMatchStatsResponse};
 
-pub struct ChungusDbServiceImpl {
+pub struct ChungusDbImpl {
     db: Db,
 }
 
-impl ChungusDbServiceImpl {
+impl ChungusDbImpl {
     pub fn new(db: Db) -> Self {
         Self { db }
     }
 }
 
 #[tonic::async_trait]
-impl ChungusDbService for ChungusDbServiceImpl {
-    async fn send_match_stats(
+impl ChungusDb for ChungusDbImpl {
+    async fn record_match_stats(
         &self,
-        request: Request<MatchStats>,
-    ) -> Result<Response<MatchStatsResponse>, Status> {
+        request: Request<RecordMatchStatsRequest>,
+    ) -> Result<Response<RecordMatchStatsResponse>, Status> {
         let match_stats = request.into_inner();
 
         info!(
@@ -74,7 +74,7 @@ impl ChungusDbService for ChungusDbServiceImpl {
 
         info!("Successfully processed match stats");
 
-        let response = MatchStatsResponse {
+        let response = RecordMatchStatsResponse {
             message: "Match stats received and processed".to_string(),
         };
 
