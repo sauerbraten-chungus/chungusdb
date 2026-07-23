@@ -5,8 +5,8 @@ use axum::{
     response::Response,
 };
 
-use jsonwebtoken::{DecodingKey, Header, Validation, decode};
-use log::{debug, error, info};
+use jsonwebtoken::{DecodingKey, Validation, decode};
+use log::{info, warn};
 use serde::Deserialize;
 
 use crate::AppState;
@@ -38,40 +38,40 @@ pub async fn jwt_auth(
 }
 
 fn get_token(headers: &HeaderMap) -> Option<&str> {
-    let header_key = "Authorization".to_string();
-    let header_value = headers.get(header_key);
+    let Some(raw_token) = headers.get("Authorization") else {
+        warn!("event=authentication_rejected reason=missing_authorization_header");
+        return None;
+    };
 
-    match header_value {
-        Some(raw_token) => match raw_token.to_str() {
-            Ok(unstripped_token) => {
-                let token = unstripped_token.strip_prefix("Bearer ");
-                info!("Token extracted: {:?}", token);
-                token
-            }
-            Err(_) => {
-                error!("Error converting raw token");
-                None
-            }
-        },
+    let Ok(authorization) = raw_token.to_str() else {
+        warn!("event=authentication_rejected reason=invalid_authorization_header");
+        return None;
+    };
 
-        None => {
-            error!("Error getting header value");
-            None
-        }
-    }
+    let Some(token) = authorization.strip_prefix("Bearer ") else {
+        warn!("event=authentication_rejected reason=invalid_authorization_scheme");
+        return None;
+    };
+
+    Some(token)
 }
 
 fn is_valid_token(token: &str, secret: &str) -> bool {
-    info!("SECRET_CHUNGUS: {:?}", secret.to_string());
     let decoding_key = DecodingKey::from_secret(secret.as_bytes());
     let validation = Validation::default();
     match decode::<Claims>(token, &decoding_key, &validation) {
-        Ok(_) => {
-            info!("Valid token");
+        Ok(token_data) => {
+            info!(
+                "event=authentication_succeeded subject={}",
+                token_data.claims.sub
+            );
             true
         }
-        Err(_) => {
-            error!("Invalid token");
+        Err(error) => {
+            warn!(
+                "event=authentication_rejected reason=invalid_token error={}",
+                error
+            );
             false
         }
     }

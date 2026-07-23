@@ -30,49 +30,57 @@ impl ChungusDb for ChungusDbImpl {
         request: Request<RecordMatchStatsRequest>,
     ) -> Result<Response<RecordMatchStatsResponse>, Status> {
         let match_stats = request.into_inner();
+        let submitted_players = match_stats.player_stats.len();
 
         info!(
-            "Received match stats for {} players",
-            match_stats.player_stats.len()
+            "event=match_stats_received submitted_players={}",
+            submitted_players
         );
 
         let incoming_players: Vec<IncomingPlayer> = match_stats
             .player_stats
             .into_iter()
-            .filter_map(|(chungid, stats)| match (uuid::Uuid::parse_str(&chungid)) {
-                Ok(chungid) => Some(IncomingPlayer {
-                    chungid,
-                    name: stats.name,
-                    frags: stats.frags,
-                    deaths: stats.deaths,
-                    accuracy: stats.accuracy as f64,
-                    elo: stats.elo,
-                }),
-                Err(e) => {
-                    error!("Invalid UUID converting player starts into IncomingPlayer");
+            .filter_map(|(chungid, stats)| match uuid::Uuid::parse_str(&chungid) {
+                Ok(chungid) => {
+                    info!(
+                        "event=player_stats_accepted chungid={} frags={} deaths={} accuracy={:.2} elo={}",
+                        chungid, stats.frags, stats.deaths, stats.accuracy, stats.elo
+                    );
+                    Some(IncomingPlayer {
+                        chungid,
+                        name: stats.name,
+                        frags: stats.frags,
+                        deaths: stats.deaths,
+                        accuracy: stats.accuracy as f64,
+                        elo: stats.elo,
+                    })
+                }
+                Err(error) => {
+                    error!(
+                        "event=player_stats_rejected reason=invalid_chungid chungid={:?} error={}",
+                        chungid, error
+                    );
                     None
                 }
             })
             .collect();
-
-        // Use the existing database upsert logic
-        // self.db
-        //     .upsert_batch_players(incoming_players)
-        //     .await
-        //     .map_err(|e| {
-        //         error!("Failed to upsert match stats: {}", e);
-        //         Status::internal(format!("Database error: {}", e))
-        //     })?;
+        let accepted_players = incoming_players.len();
 
         self.db
             .process_match_stats(incoming_players)
             .await
-            .map_err(|e| {
-                error!("Failed to process mathc stats {}", e);
-                Status::internal(format!("Database error: {}", e))
+            .map_err(|error| {
+                error!(
+                    "event=match_stats_failed accepted_players={} error={}",
+                    accepted_players, error
+                );
+                Status::internal(format!("Database error: {}", error))
             })?;
 
-        info!("Successfully processed match stats");
+        info!(
+            "event=match_stats_processed submitted_players={} accepted_players={}",
+            submitted_players, accepted_players
+        );
 
         let response = RecordMatchStatsResponse {
             message: "Match stats received and processed".to_string(),

@@ -15,7 +15,7 @@ pub fn init() -> Result<(), fern::InitError> {
         .format(|out, message, record| {
             out.finish(format_args!(
                 "[{}][{}][{}] {}",
-                chrono::Local::now().format("%H:%M:%S"),
+                chrono::Utc::now().format("%Y-%m-%dT%H:%M:%S%.3fZ"),
                 record.target(),
                 record.level(),
                 message
