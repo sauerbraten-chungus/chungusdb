@@ -111,7 +111,8 @@ impl Db {
                 deaths = players.deaths + EXCLUDED.deaths,
                 accuracy = (players.accuracy * players.matches_played + EXCLUDED.accuracy) / (players.matches_played + 1)::numeric,
                 matches_played = players.matches_played + 1,
-                elo = players.elo + EXCLUDED.elo
+                elo = players.elo + EXCLUDED.elo,
+                updated_at = NOW()
             "#,
             &chungids,
             &names,

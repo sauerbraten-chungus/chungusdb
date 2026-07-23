@@ -1,0 +1,19 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            INSERT INTO players (chungid, name, frags, deaths, accuracy, matches_played, elo)\n            SELECT\n                t.chungid,\n                t.name,\n                t.frags,\n                t.deaths,\n                t.accuracy,\n                1 as matches_played, --Dummy value\n                t.elo\n            FROM UNNEST (\n                $1::uuid[],\n                $2::text[],\n                $3::int[],\n                $4::int[],\n                $5::float8[],\n                $6::int[]\n            ) AS t(chungid, name, frags, deaths, accuracy, elo)\n            ON CONFLICT (chungid) DO UPDATE\n            SET name = EXCLUDED.name,\n                frags = players.frags + EXCLUDED.frags,\n                deaths = players.deaths + EXCLUDED.deaths,\n                accuracy = (players.accuracy * players.matches_played + EXCLUDED.accuracy) / (players.matches_played + 1)::numeric,\n                matches_played = players.matches_played + 1,\n                elo = players.elo + EXCLUDED.elo,\n                updated_at = NOW()\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "UuidArray",
+        "TextArray",
+        "Int4Array",
+        "Int4Array",
+        "Float8Array",
+        "Int4Array"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "c925dd6f3ec8042d5e0fb353713c7f62dbcc5e2f0e1132b0f6cfeb525027d7f2"
+}

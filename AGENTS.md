@@ -78,7 +78,7 @@ cargo fmt && cargo clippy
 
 ## Architecture Notes
 
-- **Upsert logic**: `process_match_stats` runs in a transaction — inserts match, upserts players (cumulative frags/deaths, weighted avg accuracy, increments matches_played, refreshes `name` to the last seen in-game name), inserts match_participants. Identity is `chungid` (UUID); `players.name` is a mutable display attribute (Steam persona-name model), while `match_participants.name` is a frozen per-match snapshot.
+- **Upsert logic**: `process_match_stats` runs in a transaction — inserts match, upserts players (cumulative frags/deaths, weighted avg accuracy, increments matches_played, refreshes `name` to the last seen in-game name, sets `updated_at` to the current transaction time), inserts match_participants. Identity is `chungid` (UUID); `players.name` is a mutable display attribute (Steam persona-name model), while `match_participants.name` is a frozen per-match snapshot.
 - **SQLx offline mode**: `.sqlx/` contains pre-checked query metadata for Docker/CI builds. It must be regenerated (`cargo sqlx prepare` against a live, migrated DB) whenever queries or schema change — a stale cache breaks the Docker build.
 - **Docker**: image builds and runs standalone — `ENTRYPOINT` is `entrypoint.sh` (waits for the DB, runs migrations, starts the service). Builder stage is `rust:1.94` (sqlx-cli 0.9 requires rustc ≥1.94).
 - No tests, no graceful shutdown
